@@ -2,14 +2,16 @@ library(ggplot2)
 getwd()
 data<-read.csv("data_qPCR_ARVC_validation.txt", sep = "\t", header = T)
 
+### Subset by miRNA for validation
+data_mir=subset(data, Target %in% c("cel-miR-39-3p", "hsa-miR-92a-3p", "hsa-miR-16-5p", 
+                                    "hsa-miR-15a-5p", "hsa-miR-145-5p", "hsa-miR-19a-3p", 
+                                    "hsa-miR-29a-3p", "hsa-miR-505-3p"))
+tail(data_mir)
+### Boxplot CT for all miRNA expression distribution by samples
 ggplot(data, aes(x=as.character(Sample), y=Cq.Mean, fill=Type)) +
   geom_boxplot(varwidth = TRUE, alpha=0.2) +
   theme(legend.position="none")
 
-### Subset by miRNA for validation
-data_mir=subset(data, Target %in% c("celmiR393p", "hsamiR92a3p", "hsamiR165p", 
-                                    "hsamiR15a5p", "hsamiR1455p", "hsamiR19a3p", 
-                                    "hsamiR29a3p", "hsamiR5053p"))
 ### Data transposition
 my_splits_samples <- split(data_mir, data_mir$Sample)
 
@@ -31,29 +33,60 @@ for(i in 1:length(l)){
 }
 
 data_qPCR_ARVC=do.call(rbind,l_3)
-
-
-
-#FILT BY MIRNAs
-
-all_data_fil<- all_data[,-c(10,12,16,17,19,21)]
-dim(all_data_fil)
-head(all_data_fil)
+head(data_qPCR_ARVC,15)
+################################################################################
 
 #NORM BY miRNA-39
+data_qPCR_ARVC_num=as.data.frame(sapply(data_qPCR_ARVC, as.numeric))
+delta39<- 2^-(data_qPCR_ARVC_num-data_qPCR_ARVC_num[,1])
+rownames(delta39)=rownames(data_qPCR_ARVC)
+head(delta39,15)
+write.csv(delta39,"delta39.csv", row.names = T)
+dim(delta39)
+susVA_5=read.delim("susVA_5.txt", header = T, sep = "\t")
+delta39=cbind(delta39, susVA_5)
 
-delta39_all_data_fil<- 2^-(all_data_fil-all_data_fil[,1])
-delta39_all_data_fil<- delta39_all_data_fil[-12,] #Filt by samples
-dim(delta39_all_data_fil)
 #CV IN %
-sapply(all_data_fil, function(x) sd(x, na.rm=T) / mean(x, na.rm=T) * 100)
+sapply(delta39, function(x) sd(x, na.rm=T) / mean(x, na.rm=T)*100)
+
+ggplot(delta39, aes(y=delta39[,2])) +
+  geom_boxplot(varwidth = TRUE, alpha=0.2) +
+  theme(legend.position="none")
+
+
+plist=list()
+for (i in c(2:4)) {
+  plist[[i]]=boxplot(data=delta39, delta39[,i])
+}
+
+
+#####transfor in data matrix
+library(corrplot)
+delta39=delta39[complete.cases(delta39), ]
+mm<- data.matrix(delta39[,-1])
+dim(mm)
+M<-cor(mm)
+
+col <- colorRampPalette(c("#BB4444", "#EE9988", "#FFFFFF", "#77AADD", "#4477AA"))
+png(height=800, width=800, file="Correlation O.D. All Dataset.png", type = "cairo")
+corrplot(M, method="circle", col=col(100),  
+         diag=FALSE,
+         type="lower", order="FPC", 
+         addCoef.col = "black",
+         mar=c(0,0,1,0),
+         tl.srt = 45,
+         number.cex= 2.5,
+         tl.cex = 2.3,
+         cl.cex = 2, number.digits = 2)
+dev.off()
+
+
 
 #BOXPLOT AND M.W. TEST
-type<-c('BrS', 'Control', rep('BrS',4), 'Control','BrS',
-        rep('Control',3))
+type<-c(rep('BrS',4),rep('Control',3))
 
 delta39_all_data_fil_type<- cbind(delta39_all_data_fil, type)
-delta39_all_data_fil_type$type <- factor(delta39_all_data_fil_type$type, 
+delta39_all_data_fil_type$type <- factor(delta39_all_data_fil_type$type,
                                          levels=c("Control", "BrS")) #to put control first
 
 for (i in c(2:18)) {
@@ -65,6 +98,21 @@ for (i in c(2:18)) {
                    data=subset(delta39_all_data_fil_type, 
                                type %in% c("Control", "BrS"))))
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 #HEATMAP
 
