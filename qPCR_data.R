@@ -1,12 +1,13 @@
 library(ggplot2)
 getwd()
 data<-read.csv("data_qPCR_ARVC_validation.txt", sep = "\t", header = T)
+head(data)
 
 ### Subset by miRNA for validation
 data_mir=subset(data, Target %in% c("cel-miR-39-3p", "hsa-miR-92a-3p", "hsa-miR-16-5p", 
                                     "hsa-miR-15a-5p", "hsa-miR-145-5p", "hsa-miR-19a-3p", 
                                     "hsa-miR-29a-3p", "hsa-miR-505-3p"))
-tail(data_mir)
+
 ### Boxplot CT for all miRNA expression distribution by samples
 ggplot(data, aes(x=as.character(Sample), y=Cq.Mean, fill=Type)) +
   geom_boxplot(varwidth = TRUE, alpha=0.2) +
@@ -41,10 +42,17 @@ data_qPCR_ARVC_num=as.data.frame(sapply(data_qPCR_ARVC, as.numeric))
 delta39<- 2^-(data_qPCR_ARVC_num-data_qPCR_ARVC_num[,1])
 rownames(delta39)=rownames(data_qPCR_ARVC)
 head(delta39,15)
-write.csv(delta39,"delta39.csv", row.names = T)
 dim(delta39)
-susVA_5=read.delim("susVA_5.txt", header = T, sep = "\t")
-delta39=cbind(delta39, susVA_5)
+
+write.csv(delta39,"delta39.csv", row.names = T)
+
+################################################################################
+
+#Select sample only ARVC (TFC>3.5)
+
+data_arvc<-read.csv("data_qPCR_ARVC_validation_clinical.txt", sep = "\t", header = T)
+head(data_arvc)
+
 
 #CV IN %
 sapply(delta39, function(x) sd(x, na.rm=T) / mean(x, na.rm=T)*100)
@@ -60,43 +68,45 @@ for (i in c(2:4)) {
 }
 
 
-#####transfor in data matrix
+##### Corr plot transfor in data matrix
 library(corrplot)
-delta39=delta39[complete.cases(delta39), ]
-mm<- data.matrix(delta39[,-1])
+data_arvc=data_arvc[complete.cases(data_arvc), ]
+dim(data_arvc)
+mm<- data.matrix(data_arvc[,-c(1, 9:18)])
 dim(mm)
 M<-cor(mm)
 
 col <- colorRampPalette(c("#BB4444", "#EE9988", "#FFFFFF", "#77AADD", "#4477AA"))
-png(height=800, width=800, file="Correlation O.D. All Dataset.png", type = "cairo")
+png(height=800, width=800, file="Correlation miRNAs ARVC samples.png", type = "cairo")
 corrplot(M, method="circle", col=col(100),  
          diag=FALSE,
          type="lower", order="FPC", 
          addCoef.col = "black",
          mar=c(0,0,1,0),
          tl.srt = 45,
-         number.cex= 2.5,
-         tl.cex = 2.3,
-         cl.cex = 2, number.digits = 2)
+         number.cex= 2.1,
+         tl.cex = 1.8,#tl.cex = legend texy size
+         cl.cex = 2, number.digits = 2) #cl.cex = eixo x size text
 dev.off()
 
 
 
 #BOXPLOT AND M.W. TEST
-type<-c(rep('BrS',4),rep('Control',3))
+data_arvc<-read.csv("data_qPCR_ARVC_validation_clinical.txt", sep = "\t", header = T)
+dim(data_arvc)
 
-delta39_all_data_fil_type<- cbind(delta39_all_data_fil, type)
-delta39_all_data_fil_type$type <- factor(delta39_all_data_fil_type$type,
-                                         levels=c("Control", "BrS")) #to put control first
 
-for (i in c(2:18)) {
-boxplot(data=delta39_all_data_fil_type, delta39_all_data_fil_type[,i]~type)
+#delta39_all_data_fil_type$type <- factor(delta39_all_data_fil_type$type,
+                                         #levels=c("Control", "BrS")) #to put control first
+names(data_arvc)
+for (i in c(2:8)) {
+boxplot(data=data_arvc, data_arvc[,i]~T_Nsus5)
 }
        
 for (i in c(2:18)) {
- print(wilcox.test(delta39_all_data_fil_type[,i]~type, 
-                   data=subset(delta39_all_data_fil_type, 
-                               type %in% c("Control", "BrS"))))
+ print(wilcox.test(data_arvc[,i]~T_Nsus5, 
+                   data=subset(data_arvc, 
+                               T_Nsus5 %in% c("T1", "T3"))))
 }
 
 
@@ -115,20 +125,26 @@ for (i in c(2:18)) {
 
 
 #HEATMAP
+library(pheatmap)
+fold=read.delim("data_qPCR_ARVC_validation_fold.txt", header = T)
+head(fold)
+dim(fold)
 
 cat_df = data.frame("Classification"=delta39_all_data_fil_type$type)
 head(cat_df, 12)
 rownames(cat_df) = row.names(delta39_all_data_fil_type)
 
-mm<- data.matrix(delta39_all_data_fil[,c(2:18)])
+mm<- data.matrix(fold[,c(1:7)])
 dim(mm)
 
 pheatmap(t(mm), cutree_cols = 2, cluster_rows = F, cluster_cols = T,
-         annotation_col = cat_df, show_colnames =F,
-         cellwidth = 15, cellheight = 18, fontsize = 8, 
-         main= "Heatmap 17 miRNAs expression in IPSC-CM between BrS and Control")
+        show_colnames =F,
+        cellwidth = 15, cellheight = 18, fontsize = 8, 
+        main= "Heatmap 17 miRNAs expression in IPSC-CM between BrS and Control")
 
-       
+
+
+annotation_col = cat_df,
 
 
 
