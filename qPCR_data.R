@@ -71,8 +71,9 @@ for (i in c(2:4)) {
 ##### Corr plot transfor in data matrix
 library(corrplot)
 data_arvc=data_arvc[complete.cases(data_arvc), ]
-dim(data_arvc)
-mm<- data.matrix(data_arvc[,-c(1, 9:18)])
+head(data_arvc)
+mm<- data.matrix(data_arvc[,c(2:8)])
+mm
 dim(mm)
 M<-cor(mm)
 
@@ -113,42 +114,30 @@ for (i in c(2:18)) {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
 #HEATMAP
 library(pheatmap)
-fold=read.delim("data_qPCR_ARVC_validation_fold.txt", header = T)
-head(fold)
-dim(fold)
-
-cat_df = data.frame("Classification"=delta39_all_data_fil_type$type)
-head(cat_df, 12)
-rownames(cat_df) = row.names(delta39_all_data_fil_type)
-
-mm<- data.matrix(fold[,c(1:7)])
+data_arvc=data_arvc[complete.cases(data_arvc), ]
+dim(data_arvc)
+head(data_arvc)
+mm<- data.matrix(data_arvc[,c(2:7)])
 dim(mm)
+mm
+myannotation=as.data.frame(data_arvc$T_Nsus5)
+myannotation
 
-pheatmap(t(mm), cutree_cols = 2, cluster_rows = F, cluster_cols = T,
+pheatmap(t(log(mm)), cutree_cols = 1, cluster_rows = T, cluster_cols = T,
         show_colnames =F,
-        cellwidth = 15, cellheight = 18, fontsize = 8, 
-        main= "Heatmap 17 miRNAs expression in IPSC-CM between BrS and Control")
+        cellwidth = 5, cellheight = 18, fontsize = 8,
+       # annotation_col=myannotation,
+        main= "Heatmap 6 miRNAs diferently expression by ARVC Risk Score")
 
 
 
-annotation_col = cat_df,
+install.packages("circlize")
+library(circlize)
 
-
-
-
+circos.heatmap(log(mm), split = split, col = col_fun1, dend.side = "outside")
+circos.clear()
 
 
 #NORM BY 16
