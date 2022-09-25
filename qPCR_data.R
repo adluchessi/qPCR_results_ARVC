@@ -72,7 +72,7 @@ for (i in c(2:4)) {
 library(corrplot)
 data_arvc=data_arvc[complete.cases(data_arvc), ]
 head(data_arvc)
-mm<- data.matrix(data_arvc[,c(2:8)])
+mm<- data.matrix(data_arvc[,c(2:7)])
 mm
 dim(mm)
 M<-cor(mm)
