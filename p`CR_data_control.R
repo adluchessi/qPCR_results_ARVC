@@ -6,7 +6,7 @@ head(data)
 ### Subset by miRNA for validation
 data_mir=subset(data, Target %in% c("cel-miR-39-3p", "hsa-miR-92a-3p", "hsa-miR-16-5p", 
                                     "hsa-miR-15a-5p", "hsa-miR-145-5p", "hsa-miR-19a-3p", 
-                                    "hsa-miR-29a-3p", "hsa-miR-505-3p"))
+                                    "hsa-miR-29a-3p"))
 
 ### Boxplot CT for all miRNA expression distribution by samples
 ggplot(data, aes(x=as.character(Sample), y=Cq.Mean, fill=Type)) +
@@ -33,6 +33,9 @@ for(i in 1:length(l)){
   rownames(l_3[[i]])<- paste('Sample',l[[i]][1,1],sep = "_")
 }
 
+l
+
+
 data_qPCR_ARVC=do.call(rbind,l_3)
 head(data_qPCR_ARVC,15)
 ################################################################################
@@ -41,7 +44,15 @@ head(data_qPCR_ARVC,15)
 data_qPCR_ARVC_num=as.data.frame(sapply(data_qPCR_ARVC, as.numeric))
 delta39<- 2^-(data_qPCR_ARVC_num-data_qPCR_ARVC_num[,1])
 rownames(delta39)=rownames(data_qPCR_ARVC)
-head(delta39,15)
+head(delta39,55)
 dim(delta39)
 
-write.csv(delta39,"delta39.csv", row.names = T)
+write.csv(delta39,"delta39_control.csv", row.names = T)
+
+data<-read.csv("data_qPCR_ARVC_validation_control_norm.txt", sep = "\t", header = T)
+head(data)
+
+ggplot(data, aes(x=as.character(Target), y=Cq.Mean, fill=Type)) +
+  geom_boxplot(varwidth = TRUE, alpha=0.2) +
+  theme(legend.position="none")
+
