@@ -69,16 +69,24 @@ for (i in c(2:4)) {
 
 
 ##### Corr plot transfor in data matrix
+
 library(corrplot)
-data_arvc=data_arvc[complete.cases(data_arvc), ]
+
+data_arvc<-read.csv("data_qPCR_ARVC_validation_clinical.txt", sep = "\t", header = T)
 head(data_arvc)
+data_arvc=data_arvc[complete.cases(data_arvc), ]
+
+tail(data_arvc)
+data_arvc=as.data.frame(subset(data_arvc, data_arvc$T_Nsus5 == "T1"))
+head(data_arvc)
+dim(data_arvc)
 mm<- data.matrix(data_arvc[,c(2:7)])
 mm
 dim(mm)
 M<-cor(mm)
 
 col <- colorRampPalette(c("#BB4444", "#EE9988", "#FFFFFF", "#77AADD", "#4477AA"))
-png(height=800, width=800, file="Correlation miRNAs ARVC samples.png", type = "cairo")
+png(height=800, width=800, file="Correlation miRNAs ARVC samples T1 Risk Score.png", type = "cairo")
 corrplot(M, method="circle", col=col(100),  
          diag=FALSE,
          type="lower", order="FPC", 
